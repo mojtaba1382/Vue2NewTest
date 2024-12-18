@@ -6,16 +6,16 @@
 
 <script>
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export default {
-  name: 'MyCube',
+  name: 'MyModel',
   data() {
     return {
       scene: null,
       camera: null,
       renderer: null,
-      cube: null,
-      wireframeCube: null, // Wireframe version of the cube
+      model: null,
       rotationSpeed: 0.05, // Rotation speed (adjustable)
       zoomSpeed: 1, // Zoom speed (adjustable)
     };
@@ -44,65 +44,67 @@ export default {
       // Create the WebGLRenderer
       this.renderer = new THREE.WebGLRenderer({ canvas: this.$refs.webglCanvas });
       this.renderer.setSize(window.innerWidth, window.innerHeight);
-
-      // Create a cube geometry
-      const geometry = new THREE.BoxGeometry();
-
-      // Create the cube material (with color)
-      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-      this.cube = new THREE.Mesh(geometry, material);
-
-      // Create the wireframe material
-      const wireframeMaterial = new THREE.MeshBasicMaterial({
-        color: 0x000000, // Color of the wireframe (black border)
-        wireframe: true, // Enable wireframe mode
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      window.addEventListener('resize', () => {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
       });
-      this.wireframeCube = new THREE.Mesh(geometry, wireframeMaterial);
 
-      // Add both the cube and the wireframe to the scene
-      this.scene.add(this.cube);
-      this.scene.add(this.wireframeCube);
+      const loader = new GLTFLoader();
+      loader.load('/MyModels/MyModel.glb', (gltf) => {
+        this.model = gltf.scene;
+        this.scene.add(this.model);
+        gltf.scene.position.set(0, 0, 0); // Ensure the model is at the origin
+        gltf.scene.scale.set(1, 1, 1);
+      }, undefined, (error) => {
+        console.error('Error loading GLTF model:', error);
+      });
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(5, 5, 5); // Position the light
+      this.scene.add(light);
 
+      // Optional: Add ambient light for overall illumination
+      const ambientLight = new THREE.AmbientLight(0x404040, 1); // Soft white light
+      this.scene.add(ambientLight);
       // Set the camera position
-      this.camera.position.z = 5;
-
+      this.camera.position.set(0, 0, 10); // Move the camera back to see the scene
+      this.camera.lookAt(this.scene.position);
+      this.scene.background = new THREE.Color(0xaaaaaa); // Light gray background
       // Start the render loop
       this.animate();
     },
 
     animate() {
       requestAnimationFrame(this.animate);
-
+      if (this.model) {
+        this.model.rotation.y += this.rotationSpeed * 0.01;
+      }
       // Render the scene
       this.renderer.render(this.scene, this.camera);
     },
 
     onKeyDown(event) {
       // Check which key was pressed and adjust the cube's rotation accordingly
+      if (!this.model) return;
       switch (event.key) {
-        case 'ArrowLeft': // Rotate cube around Y-axis to the left
-          this.cube.rotation.y -= this.rotationSpeed;
-          this.wireframeCube.rotation.y -= this.rotationSpeed;
+        case 'ArrowLeft': // Rotate model around Y-axis to the left
+          this.model.rotation.y -= this.rotationSpeed;
           break;
-        case 'ArrowRight': // Rotate cube around Y-axis to the right
-          this.cube.rotation.y += this.rotationSpeed;
-          this.wireframeCube.rotation.y += this.rotationSpeed;
+        case 'ArrowRight': // Rotate model around Y-axis to the right
+          this.model.rotation.y += this.rotationSpeed;
           break;
-        case 'ArrowUp': // Rotate cube around X-axis upwards
-          this.cube.rotation.x -= this.rotationSpeed;
-          this.wireframeCube.rotation.x -= this.rotationSpeed;
+        case 'ArrowUp': // Rotate model around X-axis upwards
+          this.model.rotation.x -= this.rotationSpeed;
           break;
-        case 'ArrowDown': // Rotate cube around X-axis downwards
-          this.cube.rotation.x += this.rotationSpeed;
-          this.wireframeCube.rotation.x += this.rotationSpeed;
+        case 'ArrowDown': // Rotate model around X-axis downwards
+          this.model.rotation.x += this.rotationSpeed;
           break;
-        case 'a': // Rotate cube around Z-axis (rotate left)
-          this.cube.rotation.z -= this.rotationSpeed;
-          this.wireframeCube.rotation.z -= this.rotationSpeed;
+        case 'a': // Rotate model around Z-axis (rotate left)
+          this.model.rotation.z -= this.rotationSpeed;
           break;
-        case 'd': // Rotate cube around Z-axis (rotate right)
-          this.cube.rotation.z += this.rotationSpeed;
-          this.wireframeCube.rotation.z += this.rotationSpeed;
+        case 'd': // Rotate model around Z-axis (rotate right)
+          this.model.rotation.z += this.rotationSpeed;
           break;
       }
     },
@@ -113,22 +115,17 @@ export default {
       this.camera.position.z += delta;
 
       // Clamp zoom levels to prevent zooming too far in or out
-      this.camera.position.z = Math.max(2, Math.min(10, this.camera.position.z));
+      //this.camera.position.z = Math.max(2, Math.min(10, this.camera.position.z));
     },
   },
 };
 </script>
 
 <style scoped>
-.cube-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #f0f0f0;
-}
 
 canvas {
-  border: 1px solid black;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 </style>
